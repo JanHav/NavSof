@@ -32,7 +32,7 @@ float AfstandTotWaypoint = 0;
 
 // Flag variables
 byte jumplock_wp = 0;   //When switching waypoints this lock will allow only one transition..
-byte beginlock_wp = 1;  //Dit lock moet ervoor zorgen dat in het begin een trackline kan 
+byte beginlock_wp = 0;  //Dit lock moet ervoor zorgen dat in het begin een trackline kan 
                         //gevormd worden door de trackline op te stellen van het huidig punt tot het volgende waypoint
 
 // Arduino Startup
@@ -40,30 +40,28 @@ void setup()
 {  
   waypoints = sizeof(wps) / sizeof(XasYas); //Berekenen van het aantal waypoints in onze huidige array
   
-  Serial.begin(9600);                     //De baudrate van de seriële monitor instellen
-
-  Serial.println("Geef twee coördinaten in die de huidige locatie bepalen (x,y)");      //We vragen de gebruiker de coördinaten van de huidige locatie door te geven
-  Serial.println("Enter data in this style <20.35,36.54>  ");
-  Serial.println();
+  Serial.begin(115200);                     //De baudrate van de seriële monitor instellen
 }
 
 
 // Arduino main loop
 void loop()
 {
-  recvWithStartEndMarkers();                                                            //Code voor het binnnenlezen van userinput
-    if (newData == true) {                                                              //This temporary copy is necessary to protect the original data
-        strcpy(tempChars, receivedChars);                                               //Because strtok() used in parseData() replaces the commas with \0
-        parseData();                                                                    //Deze functie haalt de data gescheiden door komma's uit elkaar
-        showParsedData();                                                               //Deze functie zorgt ervoor dat we via de serial monitor zien wat we ingegeven hebben
-        newData = false;
-    }
+  Serial.println("Huidige x-coordinaat ");  //Prompt User for Input
+  while(Serial.available()<2)               // Wait for User to Input Data
+  {};
+  xhuidig_wp=Serial.parseFloat();           //Read the data the user has input
+
+  Serial.println("Huidige y-coordinaat ");  //Prompt User for Input
+  while(Serial.available()<2)               // Wait for User to Input Data
+  {};
+  yhuidig_wp=Serial.parseFloat();           //Read the data the user has input
     
-  if (beginlock_wp == 0x01)     //Ervoor zorgen dat de eerste trackline berekend kan worden door het startwaypoint te voorzien van de huidige locatie
+  if (jumplock_wp == 0x00)     //Ervoor zorgen dat de eerste trackline berekend kan worden door het startwaypoint te voorzien van de huidige locatie
   {
     xstart_wp = xhuidig_wp;     //Het allereerste punt kunnen we niet opslaan in een array omdat deze bepaald wordt door de plaats waar de AGV wordt neergezet
     ystart_wp = yhuidig_wp;
-    beginlock_wp = 0x00;        //Nadat de xstart_wp en ystart_wp zijn upgedatet met de huidige locatie, mag dit vervolgens niet meer zo gebeuren,daarom dat we ons lock resetten
+    jumplock_wp = 0x01;        //Nadat de xstart_wp en ystart_wp zijn upgedatet met de huidige locatie, mag dit vervolgens niet meer zo gebeuren,daarom dat we ons lock resetten
                                 //nu is het de bedoeling dat xstart_wp en ystart_wp steeds verwijzen naar het laatste eindwaypoint, zodat de trackline correct kan berekend worden
   }
 
@@ -79,7 +77,19 @@ void loop()
     ystart_wp = wps [current_wp-1].Yas;
   }
   
-
+    Serial.print("Huidige x-coördinaat ");
+    Serial.println(xhuidig_wp);
+    Serial.print("Huidige y-coördinaat ");
+    Serial.println(yhuidig_wp);
+    Serial.println(wps[2].Xas);             //Array aanspreken uit header file die coördinaten waypoints bevat
+    Serial.print("De error op de track is ");
+    Serial.println(ErrorTrack);
+    Serial.print("Rico huidige koers ");
+    Serial.println(RicoHuidigeKoers);
+    Serial.print("Rico trackline ");
+    Serial.println(RicoTrackKoers);
+    Serial.print("Afstand tot waypoint ");
+    Serial.println(AfstandTotWaypoint);
 
 //De software moet oorsprong_wp en doel_wp updaten, ze mogen elk één waypoint verspringen
   
