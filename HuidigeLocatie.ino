@@ -55,4 +55,12 @@ void showParsedData() {
     Serial.print("Huidige y-coördinaat ");
     Serial.println(yhuidig_wp);
     Serial.println(wps[2].Xas);             //Array aanspreken uit header file die coördinaten waypoints bevat
+    Serial.print("De error op de track is ");
+    Serial.println(ErrorTrack);
+    Serial.print("Rico huidige koers ");
+    Serial.print(RicoHuidigeKoers);
+    Serial.print("Rico trackline ");
+    Serial.print(RicoTrackKoers);
+    Serial.print("Afstand tot waypoint ");
+    Serial.println(AfstandTotWaypoint);
 }
