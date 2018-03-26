@@ -11,7 +11,7 @@ float AfstandPuntRechte(float x1, float y1, float x2, float y2, float xPunt, flo
   float afstand;
   float teller;
   float noemer;
-  teller = abs((((y2-y1)/(x2-x1))*xPunt)-(1*yPunt)+((((y2-y1)/(x2-x1))*x1)-y1));
+  teller = abs((((y2-y1)/(x2-x1))*xPunt)-(1*yPunt)-((((y2-y1)/(x2-x1))*x1)-y1));
   noemer = sqrt((((y2-y1)/(x2-x1))*((y2-y1)/(x2-x1)))+1);
   afstand = teller/noemer; 
   return afstand;
