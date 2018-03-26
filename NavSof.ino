@@ -7,6 +7,7 @@
 
 
 #include "waypoints.h"
+#include <math.h>
 
 //User input variables
 const byte numChars = 32;
@@ -22,12 +23,14 @@ boolean newData = false;
 // Global variables definition
 int waypoints;            // waypoint counter 
 byte current_wp=0;          // Bevat de index waarmee we in de array van de waypoints in de header file geraken
+byte previous_wp=0;
 float xstart_wp = 0.0;    // variabele die x-coördinaat bevat voor begin trackline
 float ystart_wp = 0.0;    // variabele die y-coördinaat bevat voor begin trackline
 float ErrorTrack = 0.0;   // Variabele die de afgeweken afstand tot de trackline bevat
 float RicoHuidigeKoers = 0;
 float RicoTrackKoers = 0;
 float AfstandTotWaypoint = 0;
+double TrackHoek = 0;
 
 
 // Flag variables
@@ -69,19 +72,21 @@ void loop()
   RicoHuidigeKoers = Rico(xstart_wp, ystart_wp,wps[current_wp].Xas, wps[current_wp].Yas);                                 //Rico huidige koers
   RicoTrackKoers= Rico(xhuidig_wp, yhuidig_wp,wps[current_wp].Xas, wps[current_wp].Yas);                                  //Rico tracklijn 
   AfstandTotWaypoint = AfstandPuntPunt(xhuidig_wp, yhuidig_wp,wps[current_wp].Xas, wps[current_wp].Yas);                  //Afstand tot volgende waypoint
+  TrackHoek = HoekTweeRechten(ErrorTrack, AfstandTotWaypoint);                                                            //Hoek tussen huidige trackline en oorspronkelijke trackline berekenen
 
-  if (AfstandTotWaypoint < 0.2)
+  if (AfstandTotWaypoint < 0.4)
   {
+    previous_wp = current_wp;
     current_wp++;
-    xstart_wp = wps[current_wp-1].Xas;
-    ystart_wp = wps [current_wp-1].Yas;
+    xstart_wp = wps[previous_wp].Xas;
+    ystart_wp = wps [previous_wp].Yas;
   }
   
     Serial.print("Huidige x-coördinaat ");
     Serial.println(xhuidig_wp);
     Serial.print("Huidige y-coördinaat ");
     Serial.println(yhuidig_wp);
-    Serial.println(wps[2].Xas);             //Array aanspreken uit header file die coördinaten waypoints bevat
+    Serial.println(wps[1].Xas);             //Array aanspreken uit header file die coördinaten waypoints bevat
     Serial.print("De error op de track is ");
     Serial.println(ErrorTrack);
     Serial.print("Rico huidige koers ");
@@ -90,6 +95,12 @@ void loop()
     Serial.println(RicoTrackKoers);
     Serial.print("Afstand tot waypoint ");
     Serial.println(AfstandTotWaypoint);
+    Serial.print("Trackhoek ");
+    Serial.println(TrackHoek);
+    Serial.print("Huidig waypoint ");
+    Serial.println(current_wp);
+    Serial.print("Begin ");
+    Serial.println(xstart_wp);
 
 //De software moet oorsprong_wp en doel_wp updaten, ze mogen elk één waypoint verspringen
   
