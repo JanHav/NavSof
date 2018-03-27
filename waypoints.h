@@ -19,7 +19,7 @@ XasYas wps[] =
 
 
 #if 0 // Seefeldsee #1
- wps[] = 
+XasYas wps[] = 
 {      
 1.00,2.00,
 1.00,5.00,

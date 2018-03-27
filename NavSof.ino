@@ -2,40 +2,27 @@
 /* Nov/27/2010
 /* Version 1.1 */
 /* Released under an Apache 2.0 open source license*/
-/* Project home page is at DIYdrones.com (and ArduPilot.com)
-/* We hope you improve the code and share it with us at DIY Drones!*/
-
+/* Project home page is at carsexplained.com*/
 
 #include "waypoints.h"
 #include <math.h>
 
-//User input variables
-const byte numChars = 32;
-char receivedChars[numChars];
-char tempChars[numChars];        // temporary array for use when parsing
-
-// Variabelen die de parsed data bijhouden
-float xhuidig_wp = 0.0;
-float yhuidig_wp = 0.0;
-
-boolean newData = false;
-
 // Global variables definition
-int waypoints;            // waypoint counter 
-byte current_wp=0;          // Bevat de index waarmee we in de array van de waypoints in de header file geraken
-byte previous_wp=0;
-float xstart_wp = 0.0;    // variabele die x-coördinaat bevat voor begin trackline
-float ystart_wp = 0.0;    // variabele die y-coördinaat bevat voor begin trackline
-float ErrorTrack = 0.0;   // Variabele die de afgeweken afstand tot de trackline bevat
-float RicoHuidigeKoers = 0;
-float RicoTrackKoers = 0;
-float AfstandTotWaypoint = 0;
-double TrackHoek = 0;
-
+int waypoints;                      // Waypoint teller 
+byte current_wp=0;                  // Bevat de index waarmee we in de array van de waypoints in de header file geraken, bepaald eindpunt trackline
+byte previous_wp=0;                 // Bevat de index waarmee we in de array van de waypoints in de header file geraken, bepaald beginpunt trackline
+float xhuidig_wp = 0.0;             // Bevat de huidige x-coördinaat van de AGV, in demonstratiesoftware verkrijgen we dit via userinput 
+float yhuidig_wp = 0.0;             // Bevat de huidige y-coördinaat van de AGV, in demonstratiesoftware verkrijgen we dit via userinput
+float xstart_wp = 0.0;              // Bevat de x-coördinaat begin trackline
+float ystart_wp = 0.0;              // Bevat de y-coördinaat begin trackline
+float ErrorTrack = 0.0;             // Bevat de afgeweken afstand tot de trackline 
+float RicoHuidigeKoers = 0;         // De rico van de lijn waarop de AGV nu zit
+float RicoTrackKoers = 0;           // De rico van de lijn die de AGV het best volgt
+float AfstandTotWaypoint = 0;       // De afstand tot het volgende waypoint
+double TrackHoek = 0;               // De hoek tussen de de lijn waarop de AGV nu zit en de lijn die de AGV moet volgen
 
 // Flag variables
-byte jumplock_wp = 0;   //When switching waypoints this lock will allow only one transition..
-byte beginlock_wp = 0;  //Dit lock moet ervoor zorgen dat in het begin een trackline kan 
+byte jumplock_wp = 0;   //Dit lock moet ervoor zorgen dat in het begin een trackline kan 
                         //gevormd worden door de trackline op te stellen van het huidig punt tot het volgende waypoint
 
 // Arduino Startup
@@ -50,22 +37,24 @@ void setup()
 // Arduino main loop
 void loop()
 {
-  Serial.println("Huidige x-coordinaat ");  //Prompt User for Input
-  while(Serial.available()<2)               // Wait for User to Input Data
+  Serial.println("Huidige x-coordinaat ");  //De gebruiker naar informatie vragen
+  while(Serial.available()<2)               //Wachten tot de gebruiker iets typt
   {};
-  xhuidig_wp=Serial.parseFloat();           //Read the data the user has input
+  xhuidig_wp=Serial.parseFloat();           //De data die de gebruiker heeft ingegeven binnenlezen
 
-  Serial.println("Huidige y-coordinaat ");  //Prompt User for Input
-  while(Serial.available()<2)               // Wait for User to Input Data
+  Serial.println("Huidige y-coordinaat ");  //De gebruiker naar informatie vragen
+  while(Serial.available()<2)               //Wachten tot de gebruiker iets typt
   {};
-  yhuidig_wp=Serial.parseFloat();           //Read the data the user has input
+  yhuidig_wp=Serial.parseFloat();           //De data die de gebruiker heeft ingegeven binnenlezen
     
-  if (jumplock_wp == 0x00)     //Ervoor zorgen dat de eerste trackline berekend kan worden door het startwaypoint te voorzien van de huidige locatie
+  if (jumplock_wp == 0x00)                  //Ervoor zorgen dat de eerste trackline berekend kan worden door het startwaypoint te voorzien van de huidige locatie
   {
-    xstart_wp = xhuidig_wp;     //Het allereerste punt kunnen we niet opslaan in een array omdat deze bepaald wordt door de plaats waar de AGV wordt neergezet
-    ystart_wp = yhuidig_wp;
-    jumplock_wp = 0x01;        //Nadat de xstart_wp en ystart_wp zijn upgedatet met de huidige locatie, mag dit vervolgens niet meer zo gebeuren,daarom dat we ons lock resetten
-                                //nu is het de bedoeling dat xstart_wp en ystart_wp steeds verwijzen naar het laatste eindwaypoint, zodat de trackline correct kan berekend worden
+    xstart_wp = xhuidig_wp;                 //Het allereerste punt kunnen we niet opslaan in een array omdat deze bepaald wordt door de plaats waar de AGV wordt neergezet
+    ystart_wp = yhuidig_wp;                 //daarom bevat xstart en ystart initieel de waarde van xhuidig en yhuidig
+    jumplock_wp = 0x01;                     //Nadat de xstart_wp en ystart_wp zijn upgedatet met de huidige locatie, 
+                                            //mag dit vervolgens niet meer zo gebeuren,daarom dat we ons lock resetten
+                                            //nu is het de bedoeling dat xstart_wp en ystart_wp steeds verwijzen naar het laatste eindwaypoint, 
+                                            //zodat de trackline correct kan berekend worden
   }
 
   ErrorTrack = AfstandPuntRechte(xstart_wp, ystart_wp,wps[current_wp].Xas, wps[current_wp].Yas, xhuidig_wp, yhuidig_wp);  //In deze variabele wordt de afwijking van de trackline opgeslaan
@@ -74,14 +63,15 @@ void loop()
   AfstandTotWaypoint = AfstandPuntPunt(xhuidig_wp, yhuidig_wp,wps[current_wp].Xas, wps[current_wp].Yas);                  //Afstand tot volgende waypoint
   TrackHoek = HoekTweeRechten(ErrorTrack, AfstandTotWaypoint);                                                            //Hoek tussen huidige trackline en oorspronkelijke trackline berekenen
 
-  if (AfstandTotWaypoint < 0.4)
-  {
+  if (AfstandTotWaypoint < 0.4)             //Op het ogenblik dat de AGV dicht genoeg bij het eindwaypoint is, moet de trackline 
+  {                                         //gevormd worden door het huidige eindwaypoint en een volgend waypoint
     previous_wp = current_wp;
     current_wp++;
     xstart_wp = wps[previous_wp].Xas;
     ystart_wp = wps [previous_wp].Yas;
   }
-  
+
+  //De onderstaande printstatements zijn voor debugging/controle en visualisatie
     Serial.print("Huidige x-coördinaat ");
     Serial.println(xhuidig_wp);
     Serial.print("Huidige y-coördinaat ");
@@ -100,9 +90,6 @@ void loop()
     Serial.print("Huidig waypoint ");
     Serial.println(current_wp);
     Serial.print("Begin ");
-    Serial.println(xstart_wp);
-
-//De software moet oorsprong_wp en doel_wp updaten, ze mogen elk één waypoint verspringen
-  
+    Serial.println(xstart_wp);  
 } // end loop ()
 
